@@ -1,0 +1,68 @@
+service: dya-joke-keeper
+
+frameworkVersion: '3'
+
+custom:
+  # Messages that are posted on the group chat
+  messagesTableName: 'dya-rating-messages-${sls:stage}'
+  dynamodb:
+    start:
+      docker: true
+      port: 8000
+      inMemory: true
+      migrate: true
+      seed: true
+      convertEmptyValues: true
+  wsgi:
+    app: app.app
+
+provider:
+  name: aws
+  runtime: python3.9
+  iam:
+    role:
+      managedPolicies:
+        - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - Fn::GetAtt: [ MessagesTable, Arn ]
+  environment:
+    MESSAGES_TABLE: ${self:custom.messagesTableName}
+
+
+functions:
+  api:
+    handler: wsgi_handler.handler
+    events:
+      - httpApi: '*'
+
+plugins:
+  - serverless-python-requirements
+  - serverless-dynamodb
+  - serverless-offline
+  - serverless-wsgi
+resources:
+  Resources:
+    MessagesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: chatId
+            AttributeType: N # S for string type
+          - AttributeName: messageId
+            AttributeType: N # S for string type
+        KeySchema:
+          - AttributeName: chatId
+            KeyType: HASH # Partition key
+          - AttributeName: messageId
+            KeyType: RANGE # Sort key
+        TableName: ${self:custom.messagesTableName}
