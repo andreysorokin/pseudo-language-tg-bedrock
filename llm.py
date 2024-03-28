@@ -13,17 +13,27 @@ class LLMJoker:
             service_name="bedrock-runtime", region_name="us-east-1"
         )
 
-    def get_joke(self, russian_text):
+    def get_joke(self, source_text):
+        prompt = ("Use the funniest way to translate some words of the phrase into pseudo-language that uses Kazakh "
+                  "alphabet from Russian")
+        return self._invoke_llm(prompt, source_text)
+
+    def get_spanish(self, source_text):
+        prompt = ("Make sure that the output contain single <START> and single <END> tag, and the content in between is in spanish")
+        return self._invoke_llm(prompt, source_text)
+
+    def _invoke_llm(self, context, source_text):
         result = self._invoke_mistral_7b(
-            "Use tokens <START> and <END> in the output to mark the actual response in pseudo language,"
-            " use the funniest way to translate this into pseudo-language that uses Kazakh alphabet from Russian: \"{}\"".format(
-                russian_text))
+            "Use tokens <START> and <END> in the output to mark the actual response. "
+            "{}: \"{}\"".format(context, source_text))
         result = "".join(result)
         if (self._START_TOKEN in result and self._END_TOKEN in result):
             start_pos = result.find(self._START_TOKEN)
             end_pos = result.find(self._END_TOKEN)
             if start_pos != -1 and end_pos != -1 and start_pos < end_pos:
-                return result[start_pos + len(self._START_TOKEN):end_pos]
+                return (result[start_pos + len(self._START_TOKEN):end_pos]
+                        .replace(self._START_TOKEN, '')
+                        .replace(self._END_TOKEN, ''))
         return None
 
     def _invoke_mistral_7b(self, prompt):
@@ -65,3 +75,6 @@ class LLMJoker:
 
 
 joker = LLMJoker()
+
+if __name__ == '__main__':
+    joker.get_spanish("Я не заводил) я даже в тамагочи не играл в детстве")
