@@ -14,8 +14,8 @@ class LLMJoker:
         )
 
     def get_joke(self, source_text):
-        prompt = ("Use the funniest way to translate some words of the phrase into pseudo-language that uses Kazakh "
-                  "alphabet from Russian")
+        prompt = ("Make sure that the output contain single <START> and single <END> tag, and the content in between "
+                  "the tags contains some words in Kazakh alphabet, without direct citation of source phrase")
         return self._invoke_llm(prompt, source_text)
 
     def get_spanish(self, source_text):
